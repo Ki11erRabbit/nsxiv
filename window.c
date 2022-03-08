@@ -30,7 +30,7 @@
 #include <X11/Xatom.h>
 #include <X11/Xresource.h>
 
-extern size_t get_win_title(char *, int);
+extern size_t get_win_title(unsigned char *, int, bool);
 
 #if HAVE_LIBFONTS
 #include "utf8.h"
@@ -170,6 +170,9 @@ void win_init(win_t *win)
 	INIT_ATOM_(_NET_WM_STATE);
 	INIT_ATOM_(_NET_WM_PID);
 	INIT_ATOM_(_NET_WM_STATE_FULLSCREEN);
+	INIT_ATOM_(UTF8_STRING);
+	INIT_ATOM_(WM_NAME);
+	INIT_ATOM_(WM_ICON_NAME);
 }
 
 void win_open(win_t *win)
@@ -288,10 +291,7 @@ void win_open(win_t *win)
 	}
 	free(icon_data);
 
-	/* These two atoms won't change and thus only need to be set once. */
-	XStoreName(win->env.dpy, win->xwin, res_name);
-	XSetIconName(win->env.dpy, win->xwin, res_name);
-
+	win_set_title(win, true);
 	classhint.res_class = res_class;
 	classhint.res_name = options->res_name != NULL ? options->res_name : res_name;
 	XSetClassHint(e->dpy, win->xwin, &classhint);
@@ -502,20 +502,18 @@ void win_draw_rect(win_t *win, int x, int y, int w, int h, bool fill, int lw,
 		XDrawRectangle(win->env.dpy, win->buf.pm, gc, x, y, w, h);
 }
 
-void win_set_title(win_t *win)
+void win_set_title(win_t *win, bool init)
 {
-	char title[512];
-	size_t len;
+	size_t len, i;
+	unsigned char title[512];
+	int targets[] = { ATOM_WM_NAME, ATOM_WM_ICON_NAME, ATOM__NET_WM_NAME, ATOM__NET_WM_ICON_NAME };
 
-	if ((len = get_win_title(title, ARRLEN(title))) <= 0)
-		return;
-
-	XChangeProperty(win->env.dpy, win->xwin, atoms[ATOM__NET_WM_NAME],
-	                XInternAtom(win->env.dpy, "UTF8_STRING", False), 8,
-	                PropModeReplace, (unsigned char *) title, len);
-	XChangeProperty(win->env.dpy, win->xwin, atoms[ATOM__NET_WM_ICON_NAME],
-	                XInternAtom(win->env.dpy, "UTF8_STRING", False), 8,
-	                PropModeReplace, (unsigned char *) title, len);
+	if ((len = get_win_title(title, ARRLEN(title), init)) > 0) {
+		for (i = 0; i < ARRLEN(targets); ++i) {
+			XChangeProperty(win->env.dpy, win->xwin, atoms[targets[i]],
+			                atoms[ATOM_UTF8_STRING], 8, PropModeReplace, title, len);
+		}
+	}
 }
 
 void win_set_cursor(win_t *win, cursor_t cursor)

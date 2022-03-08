@@ -380,6 +380,9 @@ enum {
 	ATOM__NET_WM_STATE,
 	ATOM__NET_WM_PID,
 	ATOM__NET_WM_STATE_FULLSCREEN,
+	ATOM_UTF8_STRING,
+	ATOM_WM_NAME,
+	ATOM_WM_ICON_NAME,
 	ATOM_COUNT
 };
 
@@ -441,7 +444,7 @@ void win_toggle_bar(win_t*);
 void win_clear(win_t*);
 void win_draw(win_t*);
 void win_draw_rect(win_t*, int, int, int, int, bool, int, unsigned long);
-void win_set_title(win_t*);
+void win_set_title(win_t*, bool);
 void win_set_cursor(win_t*, cursor_t);
 void win_cursor_pos(win_t*, int*, int*);
 
